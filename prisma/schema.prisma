@@ -1,0 +1,117 @@
+// Prisma schema for core entities
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subscriptions Subscription[]
+  watchlists    Watchlist[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  plan      String   // free, pro
+  status    String   // active, canceled, past_due
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  isin      String?  @unique
+  name      String
+  sector    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  snapshots Snapshot[]
+  prices    PriceOHLC[]
+}
+
+model Snapshot {
+  id          String   @id @default(cuid())
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   String
+  kind        String   // fundamentals, technicals, news, filings
+  data        Json
+  sources     Json     // provenance & timestamps
+  createdAt   DateTime @default(now())
+}
+
+model PriceOHLC {
+  id        String   @id @default(cuid())
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+  date      DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float?
+  @@index([companyId, date])
+}
+
+model Filing {
+  id          String   @id @default(cuid())
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   String
+  title       String
+  url         String
+  publishedAt DateTime
+  kind        String   // results, presentation, concall, other
+  meta        Json?
+  @@index([companyId, publishedAt])
+}
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  company     Company? @relation(fields: [companyId], references: [id])
+  companyId   String?
+  title       String
+  url         String
+  source      String
+  publishedAt DateTime
+  meta        Json?
+  @@index([publishedAt])
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  name      String
+  symbols   String[]
+  createdAt DateTime @default(now())
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  symbol    String
+  kind      String // price, rsi, breakout
+  params    Json
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AlertEvent {
+  id        String   @id @default(cuid())
+  rule      AlertRule @relation(fields: [ruleId], references: [id])
+  ruleId    String
+  triggeredAt DateTime @default(now())
+  payload   Json
+}
+
