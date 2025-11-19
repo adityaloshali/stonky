@@ -13,7 +13,7 @@ from loguru import logger
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.database import close_db
-
+from app.api.v1.endpoints import test
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -101,7 +101,8 @@ async def root():
         "health": "/health",
     }
 
+app.include_router(test.router, prefix="/api/v1", tags=["test"])
 
-# API v1 router (to be added)
-# from app.api.v1.router import api_router
-# app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+# API v1 router
+from app.api.v1.router import api_router
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)

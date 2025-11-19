@@ -1,21 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-type Item = { title: string; link: string; source?: string; publishedAt?: string };
+import { getNews, type NewsArticle } from '@/lib/api/backend';
 
 export default function NewsList({ symbol }: { symbol: string }) {
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    fetch(`/api/news/${encodeURIComponent(symbol)}`)
-      .then((r) => r.json())
-      .then((d) => { if (mounted) setItems(d.items || []); })
-      .catch(() => { if (mounted) setItems([]); })
-      .finally(() => { if (mounted) setLoading(false); });
+
+    async function loadNews() {
+      try {
+        const response = await getNews(symbol, 10);
+        if (mounted) {
+          setItems(response.articles);
+        }
+      } catch (error) {
+        console.error('Failed to fetch news:', error);
+        if (mounted) {
+          setItems([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadNews();
     return () => { mounted = false; };
   }, [symbol]);
 
@@ -32,7 +46,9 @@ export default function NewsList({ symbol }: { symbol: string }) {
           <a key={idx} href={it.link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontWeight: 600 }} className="clamp-2">{it.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>{it.source || 'News'}{it.publishedAt ? ` • ${new Date(it.publishedAt).toLocaleDateString()}` : ''}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {it.source}{it.published ? ` • ${new Date(it.published).toLocaleDateString()}` : ''}
+              </div>
             </div>
           </a>
         ))}
