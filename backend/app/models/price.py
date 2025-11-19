@@ -3,7 +3,7 @@ Price models for historical OHLC data.
 """
 
 from datetime import datetime, date
-from sqlalchemy import Float, ForeignKey, Index, Date
+from sqlalchemy import Float, ForeignKey, Index, Date, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -26,6 +26,7 @@ class PriceOHLC(Base):
         low: Low price of the day
         close: Closing price
         volume: Trading volume
+        created_at: Timestamp of creation
     """
 
     __tablename__ = "prices_ohlc"
@@ -81,7 +82,7 @@ class PriceOHLC(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        datetime,
+        DateTime,
         default=datetime.utcnow,
         nullable=False,
     )
