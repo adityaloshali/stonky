@@ -1,8 +1,8 @@
-"""
-Backend API client for Stonky.
-
-Provides typed interfaces to the FastAPI backend.
-"""
+/**
+ * Backend API client for Stonky.
+ *
+ * Provides typed interfaces to the FastAPI backend.
+ */
 
 // API Configuration
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
