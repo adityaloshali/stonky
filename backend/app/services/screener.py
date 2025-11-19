@@ -78,6 +78,7 @@ class ScreenerService(BaseService):
             return result
 
         except ServiceError:
+            self.logger.error(f"Failed to fetch data for {symbol}")
             raise
         except Exception as e:
             self.logger.error(f"Error fetching Screener data for {symbol}: {e}")
