@@ -17,6 +17,7 @@ import pandas as pd
 import requests
 from io import BytesIO
 from loguru import logger
+from bs4 import BeautifulSoup
 
 from app.services.base import BaseService, ServiceError, ServiceUnavailableError
 
@@ -94,12 +95,8 @@ class ScreenerService(BaseService):
         Returns:
             Dictionary with parsed financial data
         """
-        # Construct the Excel export URL
-        # Screener.in Excel export endpoint: /api/company/{SYMBOL}/export/
-        export_url = f"{self.BASE_URL}/api/company/{symbol}/export/"
-
         try:
-            # First, check if company exists
+            # First, fetch company page to check existence and get export URL
             company_url = f"{self.BASE_URL}/company/{symbol}/consolidated/"
             check_response = requests.get(
                 company_url,
@@ -117,6 +114,31 @@ class ScreenerService(BaseService):
                     "Screener.in session expired. Please update SCREENER_COOKIE"
                 )
 
+            # Parse HTML to find export URL
+            soup = BeautifulSoup(check_response.content, 'html.parser')
+            
+            # Look for Export to Excel link
+            export_link = soup.find('a', href=lambda h: h and '/export/' in h)
+            
+            if export_link and export_link.get('href'):
+                href = export_link['href']
+                export_url = f"{self.BASE_URL}{href}" if href.startswith('/') else href
+            else:
+                self.logger.warning(f"Export link not found for {symbol}. Cookie might be invalid.")
+                # Fallback: Try to find warehouse_id
+                warehouse_elem = soup.find(attrs={"data-warehouse-id": True})
+                if warehouse_elem:
+                    warehouse_id = warehouse_elem['data-warehouse-id']
+                    export_url = f"{self.BASE_URL}/api/company/{warehouse_id}/export/"
+                else:
+                    # Last resort
+                    export_url = f"{self.BASE_URL}/api/company/{symbol}/export/"
+            
+            self.logger.info(f"Using export URL: {export_url}")
+
+            # Update Referer to the company page
+            self.headers['Referer'] = company_url
+
             # Now fetch the Excel export
             response = requests.get(
                 export_url,
@@ -132,6 +154,13 @@ class ScreenerService(BaseService):
                 )
 
             if response.status_code == 404:
+                if not export_link:
+                    raise ServiceError(
+                        f"Unable to fetch data for {symbol}. "
+                        "The 'Export to Excel' button was not found, which usually means "
+                        "your Screener.in session cookie is invalid or expired. "
+                        "Please update SCREENER_COOKIE in .env."
+                    )
                 raise ServiceError(f"No consolidated data found for {symbol}")
 
             if response.status_code != 200:
