@@ -30,10 +30,82 @@ class ServiceFactory:
         """
         self.config = config
 
-    # Service creators will be added as we build them
-    # Example:
-    # def create_screener_service(self) -> ScreenerService:
-    #     return ScreenerService(self.config.SCREENER_COOKIE)
+    def create_screener_service(self):
+        """
+        Create Screener.in service instance.
+
+        Returns:
+            ScreenerService instance
+
+        Raises:
+            ValueError: If SCREENER_COOKIE is not configured
+        """
+        from app.services.screener import ScreenerService
+
+        if not self.config.has_screener_cookie:
+            raise ValueError(
+                "SCREENER_COOKIE is not configured. "
+                "Please set it in .env file. "
+                "See backend/README.md for instructions."
+            )
+
+        return ScreenerService(
+            session_cookie=self.config.SCREENER_COOKIE,
+            timeout=30
+        )
+
+    def create_nse_service(self):
+        """
+        Create NSE service instance.
+
+        Returns:
+            NSEService instance
+        """
+        from app.services.nse import NSEService
+        return NSEService(timeout=30)
+
+    def create_yahoo_service(self):
+        """
+        Create Yahoo Finance service instance.
+
+        Returns:
+            YahooFinanceService instance
+        """
+        from app.services.yahoo import YahooFinanceService
+        return YahooFinanceService(timeout=30)
+
+    def create_news_service(self):
+        """
+        Create News service instance.
+
+        Returns:
+            NewsService instance
+        """
+        from app.services.news import NewsService
+        return NewsService(timeout=30)
+
+    def create_all_services(self) -> dict:
+        """
+        Create all services at once.
+
+        Useful for endpoints that need multiple services.
+
+        Returns:
+            Dictionary with all service instances
+
+        Note: Screener service will only be included if cookie is configured
+        """
+        services = {
+            'nse': self.create_nse_service(),
+            'yahoo': self.create_yahoo_service(),
+            'news': self.create_news_service()
+        }
+
+        # Only add screener if cookie is configured
+        if self.config.has_screener_cookie:
+            services['screener'] = self.create_screener_service()
+
+        return services
 
 
 def get_service_factory() -> ServiceFactory:
