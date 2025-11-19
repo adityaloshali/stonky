@@ -94,8 +94,8 @@ class ScreenerService(BaseService):
             Dictionary with parsed financial data
         """
         # Construct the Excel export URL
-        # Screener.in format: /company/{SYMBOL}/consolidated/
-        export_url = f"{self.BASE_URL}/api/company/{symbol}/consolidated/"
+        # Screener.in Excel export endpoint: /api/company/{SYMBOL}/export/
+        export_url = f"{self.BASE_URL}/api/company/{symbol}/export/"
 
         try:
             # First, check if company exists

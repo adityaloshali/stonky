@@ -103,6 +103,6 @@ async def root():
 
 app.include_router(test.router, prefix="/api/v1", tags=["test"])
 
-# API v1 router (to be added)
-# from app.api.v1.router import api_router
-# app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+# API v1 router
+from app.api.v1.router import api_router
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
